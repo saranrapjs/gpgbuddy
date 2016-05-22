@@ -80,24 +80,17 @@ func StrategySearchBody(msg *mail.Message) (*openpgp.Entity, error) {
 // DeriveKeyFromEmail attempts various strategies to pull down a public key, given an
 // email. Currently supported: StrategySearchBody, StrategySearchMIT.
 func DeriveKeyFromEmail(msg *mail.Message) (*openpgp.Entity, error) {
-	var success bool
-	e := new(openpgp.Entity)
 	buf, _ := ioutil.ReadAll(msg.Body)
 	for _, strat := range Strategies {
 		bb := bytes.NewBuffer(buf)
 		msg.Body = bb
 		res, err := strat(msg)
-		if err == nil {
-			e = res
-			success = true
-			break
+		if err == nil && res != nil {
+			msg.Body = bytes.NewBuffer(buf)
+			return res, nil
 		}
 	}
-	if !success {
-		return nil, errors.New("no public key found")
-	}
-	msg.Body = bytes.NewBuffer(buf)
-	return e, nil
+	return nil, errors.New("no public key found")
 }
 
 // DecryptEmail takes an email + private key, and returns the unencrypted body as a string.
