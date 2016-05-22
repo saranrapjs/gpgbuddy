@@ -97,35 +97,45 @@ func DeriveKeyFromEmail(msg *mail.Message) (*openpgp.Entity, error) {
 	return nil, errors.New("no public key found")
 }
 
+// DecryptResult represents the result of a decryption.
+type DecryptResult struct {
+	Body     string
+	TheirKey *openpgp.Entity
+}
+
+func (d DecryptResult) String() string {
+	return d.Body
+}
+
 // DecryptEmail takes an email + private key, and returns the unencrypted body as a string.
-func DecryptEmail(msg *mail.Message, myPrivateKey *openpgp.Entity) (string, error) {
+func DecryptEmail(msg *mail.Message, myPrivateKey *openpgp.Entity) (*DecryptResult, error) {
 	theirPublicKey, err := DeriveKeyFromEmail(msg)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	block, err := FindBlockOfType(msg.Body, MessageType)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if myPrivateKey == nil {
-		return "", errors.New("private key is nil")
+		return nil, errors.New("private key is nil")
 	}
 
 	if theirPublicKey == nil {
-		return "", errors.New("public key is nil")
+		return nil, errors.New("public key is nil")
 	}
 
 	m, err := Decrypt(myPrivateKey, theirPublicKey, block.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	bytes, err := ioutil.ReadAll(m)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(bytes), nil
+	return &DecryptResult{string(bytes), theirPublicKey}, nil
 }

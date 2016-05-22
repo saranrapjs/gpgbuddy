@@ -185,7 +185,7 @@ func TestEmailDecryption(t *testing.T) {
 	if err != nil {
 		t.Errorf("we SHOULD be able to decrypt this email (%s)", err)
 	}
-	if output != myCoolMessage {
+	if output.String() != myCoolMessage {
 		t.Error("The messages aren't the same :(")
 	}
 }

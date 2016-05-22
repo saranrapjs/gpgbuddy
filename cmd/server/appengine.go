@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
 	"net/mail"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+	gm "google.golang.org/appengine/mail"
 	"google.golang.org/appengine/urlfetch"
 )
 
@@ -24,6 +26,9 @@ func init() {
 type PrivateKey struct {
 	Value string `datastore:",noindex"`
 }
+
+const preamble = `I was able to read your encrypted email; what follows is an encrypted message just for you:
+`
 
 func getKey(ctx context.Context) (*openpgp.Entity, error) {
 	k := datastore.NewKey(ctx, "PrivateKey", "private_key", 0, nil)
@@ -61,7 +66,32 @@ func incomingMail(w http.ResponseWriter, r *http.Request) {
 	output, err := gpg.DecryptEmail(m, privKey)
 	if err != nil {
 		log.Errorf(ctx, "Error decrypting: %v", err)
+		return
 	}
-	log.Infof(ctx, "Received mail: %v", output)
+	log.Infof(ctx, "Received mail: %v", m.Header.Get("From"))
 
+	newMsg := "Congratulations on successfully setting up PGP/GPG 🕶\n"
+	newMsg = newMsg + "> " + output.String()
+
+	addrs, err := m.Header.AddressList("From")
+	if err != nil || len(addrs) < 1 {
+		log.Errorf(ctx, "Error addressing emails")
+		return
+	}
+	sendTo := addrs[0].Address
+	var enc bytes.Buffer
+
+	if err := gpg.Encrypt(privKey, output.TheirKey, &enc, newMsg); err != nil {
+		log.Errorf(ctx, "Error encrypting to %v", sendTo)
+	}
+
+	om := &gm.Message{
+		Sender:  "GPG Buddy <test@gpgbuddy.appspotmail.com>",
+		To:      []string{sendTo},
+		Subject: "SUCCESS! Now, an encrypted email for you...",
+		Body:    preamble + string(enc.Bytes()),
+	}
+	if err := gm.Send(ctx, om); err != nil {
+		log.Errorf(ctx, "Couldn't send email: %v", err)
+	}
 }
