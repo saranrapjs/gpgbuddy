@@ -31,7 +31,11 @@ type PublicKeyStrategy func(msg *mail.Message) (*openpgp.Entity, error)
 
 // StrategySearchMIT searches an email's "From" address for a potential MIT match.
 func StrategySearchMIT(msg *mail.Message) (*openpgp.Entity, error) {
-	return SearchEmailMIT(msg.Header.Get("From"), HTTPClient)
+	email, err := mail.ParseAddress(msg.Header.Get("From"))
+	if err != nil {
+		return nil, err
+	}
+	return SearchEmailMIT(email.Address, HTTPClient)
 }
 
 // FindBlock finds an ASCII-armored block in a reader string.
