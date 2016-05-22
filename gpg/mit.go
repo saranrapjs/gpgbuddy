@@ -39,16 +39,12 @@ func SearchEmailMIT(email string, client *http.Client) (*openpgp.Entity, error) 
 	if err != nil {
 		return nil, err
 	}
-	var identityFound bool
 	for _, i := range key.Identities {
 		if i.UserId.Email == email {
-			identityFound = true
+			return key, nil
 		}
 	}
-	if !identityFound {
-		return nil, errors.New("Identity mismatch")
-	}
-	return key, nil
+	return nil, errors.New("Identity mismatch")
 }
 
 func doSearch(email string, client *http.Client) ([]string, error) {
