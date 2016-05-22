@@ -58,7 +58,7 @@ func incomingMail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output, err := gpg.DecryptEmail(m, &privKey)
+	output, err := gpg.DecryptEmail(m, privKey)
 	if err != nil {
 		log.Errorf(ctx, "Error decrypting: %v", err)
 	}
