@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/yhat/scrape"
@@ -52,7 +53,7 @@ func SearchEmailMIT(email string, client *http.Client) (*openpgp.Entity, error) 
 
 func doSearch(email string, client *http.Client) ([]string, error) {
 	var results []string
-	req, _ := http.NewRequest("GET", fmt.Sprintf(mitSearchURL, MITHost, email), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf(mitSearchURL, MITHost, url.QueryEscape(email)), nil)
 
 	res, err := client.Do(req)
 	if err != nil {
