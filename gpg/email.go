@@ -112,6 +112,14 @@ func DecryptEmail(msg *mail.Message, myPrivateKey *openpgp.Entity) (string, erro
 		return "", err
 	}
 
+	if myPrivateKey == nil {
+		return "", errors.New("private key is nil")
+	}
+
+	if theirPublicKey == nil {
+		return "", errors.New("public key is nil")
+	}
+
 	m, err := Decrypt(myPrivateKey, theirPublicKey, block.Body)
 	if err != nil {
 		return "", err
